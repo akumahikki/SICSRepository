@@ -16,6 +16,7 @@
 #include <model/dimension/MultidimensionalModel.h>
 #include <model/dimension/MultiUniDimModel.h>
 #include <type/Constant.h>
+#include <util/util.h>
 #include <cmath>
 
 class OnePLModel : public ParameterModel
@@ -29,8 +30,11 @@ public:
 	inline void successProbability(DimensionModel *, QuadratureNodes *);
 	inline static double successProbability(double, double);
 	double successProbability(double, double *);
-	static double logLikelihood(double*, double*, int, int);
-	static void gradient (double* , double* , int , int , double* );
+	static adouble successProbabilityAD(double, adouble);
+	static double itemLogLik(double*, double*, int, int);
+	static adouble itemLogLikAD(std::vector<adouble>, double*, int, int);
+	static void itemGradient (double* , double* , int , int , double* );
+	static void itemGradientAD (double*, double*, int, int, double*);
 	// Getters and Setters
 	double *** getParameterSet() ;
 	void setParameterSet(double***);

@@ -1,0 +1,3 @@
+[submodule "SICS/CppAD"]
+	path = SICS/CppAD
+	url = https://github.com/coin-or/CppAD

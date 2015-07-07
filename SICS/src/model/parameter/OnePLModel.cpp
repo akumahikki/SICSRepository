@@ -46,6 +46,18 @@ inline double OnePLModel::successProbability(double theta, double b)
 	return (1 / (1.0 + exp(-exponential)));
 }
 
+adouble OnePLModel::successProbabilityAD(double theta, adouble b)
+{
+	adouble exponential = ((theta) - b);
+
+	if (exponential > Constant::MAX_EXP)
+		exponential = Constant::MAX_EXP;
+	else if (exponential < -(Constant::MAX_EXP))
+		exponential = -Constant::MAX_EXP;
+
+	return (1 / (1.0 + CppAD::exp(-exponential)));
+}
+
 inline double OnePLModel::successProbability(double theta, double * zita)
 {
 	long double exponential = ((theta) - zita[0]);
@@ -84,126 +96,151 @@ void OnePLModel::printParameterSet(ostream& out)
 		out << 1 << " " << (parameterSet[0][0][k]) << " " << 0 << "\n";
 }
 
-double OnePLModel::logLikelihood(double* args, double* pars, int nargs, int npars)
+void OnePLModel::itemGradientAD(double* args, double* pars, int nargs, int npars, double* gradient)
 {
-	//args
-	/*
-	 * a = 1
-	 * b[i]
-	 */
+	std::vector<adouble> args_t(1);
 
-	//pars
-	/*
-	 * q
-	 * I
-	 * theta[q]
-	 * f[q]
-	 * r[q*I]
-	 */
+	args_t[0] = args[0];
 
-	int nA = 0;
+	CppAD::Independent(args_t);
+	size_t m = 1;
+	std::vector<CppAD::AD<double>> Y(m);
+	Y[0] = itemLogLikAD(args_t,pars,nargs,npars);
+
+	CppAD::ADFun<double> f(args_t, Y);
+
+	std::vector<double> jac(m);
+	std::vector<double> x(1);
+
+	x[0] = args[0];
+
+	jac  = f.Jacobian(x);
+
+	memset(gradient, 0, sizeof(double));
+
+	gradient[0] = jac[0];
+}
+
+double OnePLModel::itemLogLik (double* args, double* pars, int nargs, int npars)
+{
 	int nP = 0;
-	int k, i, q, It;
-	double *b;
-	long double tp, tq;
-	long double sum = 0;
+	unsigned int q, items;
+	int index = 0;
+	double *theta, *r, *f;
+	double a;
+	double sum=0;
+	long double tp , tq;
+	
+	index = pars[npars-1];
 
 	// Obtain q
-	q = pars[nP++]; // q is obtained and npars is augmented
+	q = pars[nP ++]; // q is obtained and npars is augmented
 
 	// Obtain I
-	It = pars[nP++];
+	items = pars[nP ++];
+	theta = new double[q];
+	r = new double[q];
+	f = new double[q];
 
-	b = new double[It];
+	// Obtain theta
+	for (unsigned int k=0; k<q; k++)
+		theta[k] = pars[nP ++];
 
-	// Obtain b
-	for (i = 0; i < It; i++)
-		b[i] = args[nA++];
+	// Obtain f
+	for (unsigned int k=0; k<q; k++)
+		f[k] = pars[nP ++];
 
-	for (k = 0; k < q; ++k)
+	// Obtain r that becomes a vector
+	for (unsigned int k=0; k<q; k++)
 	{
-		for (i = 0; i < It; ++i)
-		{
-			tp = (OnePLModel::successProbability(pars[k + 2], b[i]));
+		nP += index;
+		r[k] = pars[nP];
+		nP += (items-index);
+	}
+	
+	// Obtain a
+	a = args[0];
 
-			if (tp == 0)
-				tp = 1e-08;
-			tq = 1 - tp;
-			if (tq == 0)
-				tq = 1e-08;
-			
-			sum += (pars[k * It + i + 2 + (2 * q)] * log(tp))
-					+ (pars[k + 2 + q] - pars[k * It + i + 2 + 2 * q]) * log(tq);
-		}
+	for (unsigned int k = 0; k < q; ++k)
+	{
+		tp = (OnePLModel::successProbability ( theta[k], a));
+		
+		if (tp < 1e-08)
+			tp = 1e-08;
+
+		tq = 1-tp;
+
+		if (tq < 1e-08)
+			tq = 1e-08;
+
+		sum += (r[k]*log(tp))+(f[k]-r[k])*log(tq);
 	}
 
-	delete[] b;
+	// TODO: Analize
+	args[0] = a;
+
+	delete[] theta;
+	delete[] f;
+	delete[] r;
 
 	return (-sum);
 }
-/*
 
- void OnePLModel::Hessian(double* args, double* pars, int nargs, int npars,
- double* hessian) {
-
- }
- */
-
-void OnePLModel::gradient(double* args, double* pars, int nargs, int npars, double* gradient)
+adouble OnePLModel::itemLogLikAD(std::vector<adouble> args, double* pars, int nargs, int npars)
 {
-	/*
-	 *
-	 * What we need
-	 * items
-	 * q
-	 * theta array
-	 * b
-	 * f and r
-	 */
-	int nA = 0;
-	int nP = 0;
-	int i, k, q, items;
-	double *b;
+	double *theta, *r, *f;
+	unsigned int nP, q, items, index;
+	adouble a, b, tp, tq, sum;
 
-	// Obtain q
-	q = pars[nP++]; // q is obtained and npars is augmented
-	// Obtain I
+	sum = nP = index = 0;
+
+	a = args[0];
+	
+	q = pars[nP++];
 	items = pars[nP++];
-	b = new double[items];
+	index = pars[npars - 1];
 
-	// Obtain b
-	for (i = 0; i < items; i++) {
-		b[i] = args[nA++];
+	theta = new double[q];
+	r = new double[q];
+	f = new double[q];
+
+	// Obtain theta
+	for (unsigned int k=0; k<q; k++)
+		theta[k] = pars[nP++];
+
+	// Obtain f
+	for (unsigned int k=0; k<q; k++)
+		f[k] = pars[nP++];
+
+	// Obtain r that becomes a vector
+	for (unsigned int k=0; k<q; k++)
+	{
+		nP += index;
+		r[k] = pars[nP];
+		nP += (items-index);
 	}
 
-	long double *h; // Block vector of size I (i.e. I blocks). Each block-element has size of 1
-	long double *P;  // Matrix of size q*I
-	long double *factor;	  // Matrix of product (r-fP)
+	for (unsigned int k = 0; k < q; ++k)
+	{
+		tp = (OnePLModel::successProbabilityAD(pars[k + 2], a));
 
-	h = new long double[items];
-	P = new long double[q * items];
-	factor = new long double[q * items];
+		if (tp == 0)
+			tp = 1e-08;
+		
+		tq = 1 - tp;
 
-	for (k = 0; k < q; k++) {
-		for (i = 0; i < items; i++) {
-			P[k * items + i] = successProbability(pars[k + 2], b[i]);
-			factor[k * items + i] = (pars[k * items + i + 2 + 2 * q]
-					- pars[k + 2 + q] * P[k * items + i]);
-		}
-	}
-	memset(h, 0, sizeof(long double) * items);
-	memset(gradient, 0, sizeof(double) * items);
-	for (i = 0; i < items; i++) {
-		for (k = 0; k < q; k++) {
-			h[i] += factor[k * items + i];
-		}
+		if (tq == 0)
+			tq = 1e-08;
+
+		sum += (r[k]*log(tp))+(f[k]-r[k])*log(tq);
 	}
 
-	delete[] P;
-	delete[] factor;
-	delete[] b;
-	for (int i = 0; i < items; ++i) {
-		gradient[i] = static_cast<double>(h[i]);
-	}
-	delete[] h;
+	// TODO: Analize
+	args[0] = a;
+
+	delete[] theta;
+	delete[] f;
+	delete[] r;
+
+	return (-sum);
 }

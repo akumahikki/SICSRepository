@@ -54,7 +54,7 @@ public:
                 pset[1][0][i] = -(ppnd(result[0], &ifault)) / result[1];
             }
 
-            delete result;
+            delete [] result;
         }
     }
 
@@ -73,7 +73,7 @@ public:
         this->weights = this->nodes->getWeight();
         this->items = data->countItems();
         this->fptr = &TwoPLModel::itemLogLik;
-        this->gptr = &TwoPLModel::itemGradient;
+        this->gptr = &TwoPLModel::itemGradientAD;
         this->hptr = NULL;
 
         this->bitset_list = data->getBitsetList();

@@ -8,10 +8,14 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 #include <util/asa111.h>
-
+#include <cppad/cppad.hpp>	// the CppAD package http://www.coin-or.org/CppAD/
+ 
+#define CAD CppAD::AD<double>
 #define iteration_0 (*args_hist)[2]
 #define iteration_1 (*args_hist)[1]
 #define iteration_2 (*args_hist)[0]
+
+typedef CAD adouble;
 
 /**
  * Functions part one

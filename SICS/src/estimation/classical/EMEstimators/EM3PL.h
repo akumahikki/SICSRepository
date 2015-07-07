@@ -83,12 +83,15 @@ public:
 		{
 			double * result = Andrade();
 			int ifault;
+			
 			for (int i = 0; i < items; i++)
 			{
 				pset[0][0][i] = std::sqrt((result[1] * result[1]) / (1.0 - result[1] * result[1]));
 				pset[1][0][i] = -(ppnd(result[0], &ifault)) / result[1];
 				pset[2][0][i] = 0.2;
 			}
+
+			delete [] result;
 		}
 	}
 
@@ -107,7 +110,7 @@ public:
 		this->weights = this->nodes->getWeight();
 		this->items = data->countItems();
 		this->fptr = &ThreePLModel::itemLogLik2;
-		this->gptr = &ThreePLModel::itemGradient2;
+		this->gptr = &ThreePLModel::itemGradientAD;
 		this->hptr = NULL;
 		this->bitset_list = data->getBitsetList();
 		this->frequency_list = data->getFrequencyList();
