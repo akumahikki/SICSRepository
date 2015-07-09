@@ -18,10 +18,6 @@ private:
 
 public:
 
-	virtual void transform() {}
-
-	virtual void untransform() {}
-
 	virtual void setInitialValues(double *** pset, Model* m) { m->getParameterModel()->setParameterSet(pset); }
 
 	virtual void setInitialValues(int method, Model* m)

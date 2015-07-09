@@ -46,12 +46,6 @@ public:
 
     EMEstimator(Model* m, QuadratureNodes* nodes, Matrix<double>* f, Matrix<double>* r) {}
 
-    //Transforms the parameters before starting an estimation process
-    virtual void transform() = 0;
-
-    //Transforms back the parameters after estimating them
-    virtual void untransform() = 0;
-
     //Reduce iterations
     virtual void stepRamsay(double *** parameters, int * nargs, int t_size, bool continue_flag) = 0;
 
