@@ -13,6 +13,12 @@ TwoPLModel::TwoPLModel()
 	probabilityMatrix = NULL;
 }
 
+void TwoPLModel::untransform()
+{
+    for (int i = 0; i < itemModel->getDataset()->countItems(); ++i)
+        parameterSet[1][0][i] /= -parameterSet[0][0][i];
+}
+
 void TwoPLModel::getParameters(double * parameters)
 {
     int i = 0;
@@ -94,6 +100,8 @@ inline double TwoPLModel::successProbability(double theta, double * zita)
 		exponential = Constant::MAX_EXP;
 	else if (exponential < -(Constant::MAX_EXP)) 
 		exponential = -Constant::MAX_EXP;
+
+	delete [] zita;
 
 	return (1 / (1 + exp(-exponential)));
 }

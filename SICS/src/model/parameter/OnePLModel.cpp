@@ -67,6 +67,8 @@ inline double OnePLModel::successProbability(double theta, double * zita)
 	else if (exponential < -(Constant::MAX_EXP))
 		exponential = -Constant::MAX_EXP;
 
+	delete [] zita;
+
 	return (1 / (1.0 + exp(-exponential)));
 }
 

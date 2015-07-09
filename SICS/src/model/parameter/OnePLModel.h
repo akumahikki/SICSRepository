@@ -35,6 +35,8 @@ public:
 	static adouble itemLogLikAD(std::vector<adouble>, double*, int, int);
 	static void itemGradient (double* , double* , int , int , double* );
 	static void itemGradientAD (double*, double*, int, int, double*);
+	virtual void transform() {}
+	virtual void untransform() {}
 	// Getters and Setters
 	double *** getParameterSet() ;
 	void setParameterSet(double***);

@@ -41,6 +41,9 @@ public:
 	static adouble successProbabilityAD(double, adouble, adouble, adouble);
 	double successProbability(double, double *);
 	static double successProbability_cPrime (double, double, double, double);
+	virtual void transform();
+	virtual void untransform();
+
 	// Constructor
 	ThreePLModel();
 

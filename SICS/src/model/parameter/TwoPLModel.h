@@ -37,6 +37,8 @@ public:
 	static void itemGradientAD (double*, double*, int, int, double*);
 	static double itemLogLik (double*, double*, int, int);
 	static adouble itemLogLikAD(std::vector<adouble>, double*, int, int);
+	virtual void transform() {}
+	virtual void untransform();
 
 	double *** getParameterSet();
 	double getProbability(int, int);
